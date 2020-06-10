@@ -7,6 +7,7 @@ import Loading from "../shared/Loading/Loading";
 import CovidTable from "../CovidTable/CovidTable";
 import CovidSelector from "../shared/CovidSelector/CovidSelector";
 import CovidTimeChart from "../CovidTimeChart/CovidTimeChart";
+import moment from "moment";
 
 export default class CovidContainer extends React.Component {
   constructor(props) {
@@ -23,31 +24,47 @@ export default class CovidContainer extends React.Component {
 
   componentDidMount() {
     if (!localStorage.getItem("resultState")) {
-      service
-        .getCasesByState()
-        .then((res) => {
-          const resultState = {
-            data: res.data.sort((a, b) =>
-              a.noOfCases - b.noOfCases > 0 ? -1 : 1
-            ),
-            states: res.data.map((r) => {
-              return {
-                key: r.state.split(" ")[0],
-                value: r.state,
-                text: r.state,
-              };
-            }),
-          };
-          this.setState(resultState);
-          localStorage.setItem("resultState", JSON.stringify(resultState));
-          localStorage.setItem("lastUpdatedTime", new Date());
-        })
-        .catch((err) => {
-          console.log("err ", err);
-        });
+      this.getCovidData();
     } else {
-      this.setState(JSON.parse(localStorage.getItem("resultState")));
+      if (localStorage.getItem("lastUpdatedTime")) {
+        if (
+          moment().diff(
+            moment(localStorage.getItem("lastUpdatedTime")),
+            "minutes"
+          ) > 15
+        ) {
+          localStorage.clear();
+          this.getCovidData();
+        } else this.setState(JSON.parse(localStorage.getItem("resultState")));
+      } else {
+        this.setState(JSON.parse(localStorage.getItem("resultState")));
+      }
     }
+  }
+
+  getCovidData() {
+    service
+      .getCasesByState()
+      .then((res) => {
+        const resultState = {
+          data: res.data.sort((a, b) =>
+            a.noOfCases - b.noOfCases > 0 ? -1 : 1
+          ),
+          states: res.data.map((r) => {
+            return {
+              key: r.state.split(" ")[0],
+              value: r.state,
+              text: r.state,
+            };
+          }),
+        };
+        this.setState(resultState);
+        localStorage.setItem("resultState", JSON.stringify(resultState));
+        localStorage.setItem("lastUpdatedTime", moment().toISOString());
+      })
+      .catch((err) => {
+        console.log("err ", err);
+      });
   }
 
   buildCovidDataTable() {
@@ -120,7 +137,7 @@ export default class CovidContainer extends React.Component {
   }
 
   searchChange = async (event) => {
-    this.setState({loadCovidTable: true, loadChart: true})
+    this.setState({ loadCovidTable: true, loadChart: true });
     this.getTimeData(event.state);
     let data = this.state.data.sort((a, b) =>
       a.noOfCases - b.noOfCases > 0 ? -1 : 1
@@ -129,7 +146,11 @@ export default class CovidContainer extends React.Component {
     await new Promise((r) => setTimeout(r, 100));
     filteredStates.unshift(data.filter((r) => r.state === event.state)[0]);
     await new Promise((r) => setTimeout(r, 100));
-    this.setState({ data: filteredStates, selectedState: event.state, loadCovidTable: false });
+    this.setState({
+      data: filteredStates,
+      selectedState: event.state,
+      loadCovidTable: false,
+    });
   };
 
   getTimeData(covidState) {
