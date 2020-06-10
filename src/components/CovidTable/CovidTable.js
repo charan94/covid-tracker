@@ -38,7 +38,7 @@ export default class CovidTable extends React.Component {
 
   render() {
     return (
-      <Table color={this.props.color} fixed striped>
+      <Table color={this.props.color} stackable striped unstackable>
         <Table.Header>{this.headers}</Table.Header>
         <Table.Body>
             {this.data}
