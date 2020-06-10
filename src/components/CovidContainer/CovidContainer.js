@@ -123,7 +123,7 @@ export default class CovidContainer extends React.Component {
               />
             </Grid.Column>
           </Grid>
-          <Grid columns={2} divided style={{ margin: "5px", padding: "5px" }}>
+          <Grid columns={2} divided stackable style={{ margin: "5px", padding: "5px" }}>
             <Grid.Column style={{ overflowY: "scroll", height: "400px" }}>
               {this.buildCovidDataTable()}
             </Grid.Column>
