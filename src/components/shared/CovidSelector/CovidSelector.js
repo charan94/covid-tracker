@@ -24,6 +24,7 @@ export default class CovidSelector extends React.Component {
 
   render() {
     return (
+      <div>
       <Dropdown
         placeholder="Select State"
         search
@@ -34,6 +35,7 @@ export default class CovidSelector extends React.Component {
         value={this.state.value}
         searchQuery={this.state.searchQuery}
       />
+      </div>
     );
   }
 }
