@@ -7,6 +7,7 @@ import Loading from "../shared/Loading/Loading";
 import CovidTable from "../CovidTable/CovidTable";
 import CovidSelector from "../shared/CovidSelector/CovidSelector";
 import CovidTimeChart from "../CovidTimeChart/CovidTimeChart";
+import CovidBox from "../CovidBox/CovidBox";
 import moment from "moment";
 
 export default class CovidContainer extends React.Component {
@@ -45,7 +46,7 @@ export default class CovidContainer extends React.Component {
   getCovidData() {
     service
       .getCasesByState()
-      .then((res) => {
+      .then(async (res) => {
         const resultState = {
           data: res.data.sort((a, b) =>
             a.noOfCases - b.noOfCases > 0 ? -1 : 1
@@ -58,6 +59,8 @@ export default class CovidContainer extends React.Component {
             };
           }),
         };
+        resultState.states.unshift({key:-1, value: 'Select', text: 'Select'});
+        await new Promise((r) => setTimeout(r, 150));
         this.setState(resultState);
         localStorage.setItem("resultState", JSON.stringify(resultState));
         localStorage.setItem("lastUpdatedTime", moment().toISOString());
@@ -69,7 +72,7 @@ export default class CovidContainer extends React.Component {
 
   buildCovidDataTable() {
     if (!this.state.loadCovidTable) {
-      return <CovidTable data={this.state.data} color="red" />;
+      return <CovidTable data={this.state.data.slice(0, 5)} color="red" />;
     } else {
       return (
         <Segment textAlign="center" loading style={{ height: "400px" }}>
@@ -87,7 +90,7 @@ export default class CovidContainer extends React.Component {
       !this.state.loadChart
     ) {
       return (
-        <Segment textAlign="center" style={{ height: "400px" }}>
+        <Segment textAlign="center" style={{ height: "250px" }}>
           <Header as="h4" textAlign="center" color="black">
             Please select a state to view its Timeline Chart.
           </Header>
@@ -95,7 +98,7 @@ export default class CovidContainer extends React.Component {
       );
     } else if (this.state.loadChart) {
       return (
-        <Segment textAlign="center" loading style={{ height: "400px" }}>
+        <Segment textAlign="center" loading style={{ height: "250px" }}>
           <Header as="h4" textAlign="center" color="black">
             Loading...
           </Header>
@@ -110,11 +113,39 @@ export default class CovidContainer extends React.Component {
     }
   }
 
+  buildSecondRow() {
+    if (this.state.data.length && this.state.states.length) {
+      if (!this.state.selectedState) {
+        return (
+          <Grid columns={1} stackable style={{ margin: "5px", padding: "5px" }}>
+            <Grid.Column>
+              <Header as="h3" textAlign="center">
+                Top 5 states
+              </Header>
+              {this.buildCovidDataTable()}
+            </Grid.Column>
+          </Grid>
+        );
+      } else if (this.state.selectedState) {
+        return (
+          <Grid columns={1} stackable style={{ margin: "5px", padding: "5px" }}>
+            <Grid.Column>{this.buildCovidTimeSeriesChart()}</Grid.Column>
+          </Grid>
+        );
+      }
+    }
+  }
+
   buildMain() {
     if (this.state.data.length && this.state.states.length) {
       return (
         <div>
-          <Grid columns={1}>
+          <Grid
+            columns={1}
+            stackable
+            textAlign="center"
+            style={{ marginLeft: "5px", paddingLeft: "5px" }}
+          >
             <Grid.Column textAlign="center">
               <CovidSelector
                 states={this.state.states}
@@ -123,12 +154,22 @@ export default class CovidContainer extends React.Component {
               />
             </Grid.Column>
           </Grid>
-          <Grid columns={2} divided stackable style={{ margin: "5px", padding: "5px" }}>
-            <Grid.Column style={{ overflowY: "scroll", height: "400px" }}>
-              {this.buildCovidDataTable()}
+          <Grid columns={1} stackable centered container>
+            <Grid.Column textAlign="center">
+              <CovidBox
+                totalCases={this.state.data
+                  .map((r) => r.noOfCases)
+                  .reduce((a, b) => a + b)}
+                totalRecovered={this.state.data
+                  .map((r) => r.cured)
+                  .reduce((a, b) => a + b)}
+                totalDeaths={this.state.data
+                  .map((r) => r.deaths)
+                  .reduce((a, b) => a + b)}
+              ></CovidBox>
             </Grid.Column>
-            <Grid.Column>{this.buildCovidTimeSeriesChart()}</Grid.Column>
           </Grid>
+          {this.buildSecondRow()}
         </div>
       );
     } else {
@@ -137,14 +178,13 @@ export default class CovidContainer extends React.Component {
   }
 
   searchChange = async (event) => {
+    if(event.state === 'Select') {
+      this.setState({data: JSON.parse(localStorage.getItem('resultState')).data, selectedState: ''});
+      return;
+    }
     this.setState({ loadCovidTable: true, loadChart: true });
     this.getTimeData(event.state);
-    let data = this.state.data.sort((a, b) =>
-      a.noOfCases - b.noOfCases > 0 ? -1 : 1
-    );
-    let filteredStates = data.filter((r) => r.state !== event.state);
-    await new Promise((r) => setTimeout(r, 100));
-    filteredStates.unshift(data.filter((r) => r.state === event.state)[0]);
+    let filteredStates = JSON.parse(localStorage.getItem('resultState')).data.filter((r) => r.state === event.state);
     await new Promise((r) => setTimeout(r, 100));
     this.setState({
       data: filteredStates,

@@ -9,7 +9,7 @@ export default class CovidHeader extends React.Component {
   render() {
     return (
       <Header as="h2" textAlign="center" color="black">
-        Covid Tracker
+        India - Covid Tracker
         <Header.Subheader>
          Real time tracking, Made with React.
         </Header.Subheader>
