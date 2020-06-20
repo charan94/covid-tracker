@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({
     extended: false,
     limit: '1024mb'
 }));
-// app.use(helmet()); // required for sanitizing headers
+app.use(helmet()); // required for sanitizing headers
 app.use(morgan('dev')); // required for mapping requests to console
 
 app.use('/', express.static(path.join(__dirname, 'build')));
